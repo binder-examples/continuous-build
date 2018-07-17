@@ -3,7 +3,7 @@ jobs:
 
   # If you want to deploy your container to Docker Hub, you must
   #  1. define the CONTAINER_NAME environment variable for the project
-  #     If not defined, will use the repo that is being built from.
+  #     If not defined, will use the repository that is being built from.
   #  2. Define the DOCKER_TAG if you have preference. If not defined, will use
   #     the commit associated with the build.
   #  3. define the REPO_NAME with the juypter notebook you want to build. If not
