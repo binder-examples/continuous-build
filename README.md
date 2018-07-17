@@ -25,4 +25,4 @@ be desired for all users.
 
 ## Request an Example
 
-If you want to get help, or request an example, please [let us know!](https://www.github.com/jupyter/continuous-build/issues)
+If you want to get help, or request an example, please [let us know!](https://www.github.com/binder-examples/continuous-build/issues)
