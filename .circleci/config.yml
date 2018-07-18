@@ -12,8 +12,6 @@ jobs:
   setup:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
-      # Change this to be the repository with the notebook you want to build
-      - REPO_NAME: https://github.com/norvig/pytudes
     docker:
       - image: docker:18.01.0-ce-git
       - image: circleci/python:3.6.1
@@ -25,6 +23,8 @@ jobs:
   build:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      # Change this to be the repository with the notebook you want to build
+      - REPO_NAME: https://github.com/norvig/pytudes
     docker:
       - image: docker:18.01.0-ce-git
     working_directory: /tmp/src
