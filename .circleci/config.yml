@@ -73,11 +73,6 @@ jobs:
                 then
                     CONTAINER_NAME="${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
             fi
-            # If not set, use testing repo name
-            if [ ! -n "{REPO_NAME}" ]
-              then
-              ${REPO_NAME}="https://www.github.com/${CONTAINER_NAME}"
-            fi
             echo "Container name is ${CONTAINER_NAME}"
             echo "Repository name is ${REPO_NAME}"
             echo "2. Running jupyter-repo2docker..."
