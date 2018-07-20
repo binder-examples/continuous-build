@@ -138,6 +138,8 @@ jobs:
               docker images
             fi
       - run:
+          # Insert a better command here to determine if your container will
+          # be able to successfully run or not.
           name: Run a command in the  built container to check it runs
           command: |
             # If not set, use commit id as tag
