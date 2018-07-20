@@ -2,13 +2,20 @@ version: 2
 jobs:
 
   # If you want to deploy your container to Docker Hub, you must
+  # define environment variables in the CircleCI web interface for your project
   #  1. define the CONTAINER_NAME environment variable for the project
+  #     Specifically, this is the name of the Docker Hub <ORG>/<NAME> to push
   #     If not defined, will use the repository that is being built from.
-  #  2. Define the DOCKER_TAG if you have preference. If not defined, will use
+  #     to in the case that you have provided Docker credentials. 
+  #  2. Define DOCKER_USER and DOCKER_PASS (for push to Docker Hub, if wanted)
+  #     If you don't define these in CircleCI settings it won't be pushed.
+  #  3. Optionally define the DOCKER_TAG. If not defined, will use
   #     the commit associated with the build.
-  #  3. define the REPO_NAME with the juypter notebook you want to build. If not
-  #     defined, will use https://www.github.com/{CONTAINER_NAME}
-  #  4. Also define DOCKER_USER and DOCKER_PASS (for deploy, if wanted)
+  #  4. By default, the build assumes wanting to use the local notebook here.
+  #     If you want to build from a **different** Github repository, then define
+  #     the variable REPO_NAME as the name of the repository that you 
+  #     want to build. That can be done in this file under build:environment,
+  #     or again online in the CircleCI environment variable settings. 
   setup:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
@@ -71,13 +78,17 @@ jobs:
                 then
                     CONTAINER_NAME="${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
             fi
-            # If not set, use testing repo name
-            if [ ! -n "{REPO_NAME}" ]
-              then
-              ${REPO_NAME}="https://www.github.com/${CONTAINER_NAME}"
-            fi
             echo "Container name is ${CONTAINER_NAME}"
-            echo "Repository name is ${REPO_NAME}"
+            # If not set, define REPO_NAME
+            if [ ! -n "${REPO_NAME:-}" ]
+                then
+                    LOCAL_REPO="${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+                    REPO_NAME=/tmp/src
+                    echo "Repository name (REPO_NAME) is not defined, will build ${LOCAL_REPO} in ${REPO_NAME}"
+                    ls ${REPO_NAME}
+            else
+                echo "Repository name found defined for build: ${REPO_NAME}"
+            fi
             echo "2. Running jupyter-repo2docker..."
             echo "jupyter-repo2docker --debug --user-name username --user-id 1000 --no-run --image-name ${CONTAINER_NAME}:${DOCKER_TAG} ${REPO_NAME}"
             jupyter-repo2docker --debug --user-name username --user-id 1000 --no-run --image-name "${CONTAINER_NAME}:${DOCKER_TAG}" "${REPO_NAME}"
