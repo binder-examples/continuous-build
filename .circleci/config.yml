@@ -6,16 +6,16 @@ jobs:
   #  1. define the CONTAINER_NAME environment variable for the project
   #     Specifically, this is the name of the Docker Hub <ORG>/<NAME> to push
   #     If not defined, will use the repository that is being built from.
-  #     to in the case that you have provided Docker credentials. 
+  #     to in the case that you have provided Docker credentials.
   #  2. Define DOCKER_USER and DOCKER_PASS (for push to Docker Hub, if wanted)
   #     If you don't define these in CircleCI settings it won't be pushed.
   #  3. Optionally define the DOCKER_TAG. If not defined, will use
   #     the commit associated with the build.
   #  4. By default, the build assumes wanting to use the local notebook here.
   #     If you want to build from a **different** Github repository, then define
-  #     the variable REPO_NAME as the name of the repository that you 
+  #     the variable REPO_NAME as the name of the repository that you
   #     want to build. That can be done in this file under build:environment,
-  #     or again online in the CircleCI environment variable settings. 
+  #     or again online in the CircleCI environment variable settings.
   setup:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
@@ -24,7 +24,7 @@ jobs:
       - image: circleci/python:3.6.1
     steps:
       - run:
-          name: Test if the user has defined the repository name 
+          name: Test if the user has defined the repository name
           command: apk add --no-cache pigz python3
 
   build:
@@ -118,6 +118,40 @@ jobs:
             - cache/container.tar.gz
             - src
 
+  run_container:
+    machine:
+      image: circleci/classic:201711-01
+    working_directory: /tmp/src
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load Docker image layer cache
+          no_output_timeout: 30m
+          command: |
+            echo "Working directory is ${PWD}"
+            docker info
+            set +o pipefail
+            if [ -f /tmp/cache/container.tar.gz ]; then
+              sudo apt update && sudo apt -y install pigz
+              pigz -d --stdout /tmp/cache/container.tar.gz | docker load
+              docker images
+            fi
+      - run:
+          name: Run a command in the  built container to check it runs
+          command: |
+            # If not set, use commit id as tag
+            if [ ! -n "${DOCKER_TAG:-}" ]
+                then
+                    DOCKER_TAG=$(echo "${CIRCLE_SHA1}" | cut -c1-10)
+            fi
+            # If not set, define CONTAINER_NAME
+            if [ ! -n "${CONTAINER_NAME:-}" ]
+                then
+                    CONTAINER_NAME="${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+            fi
+            docker run -it ${CONTAINER_NAME}:${DOCKER_TAG} python -c 'import pokemon'
+
   update_cache:
     machine:
       # Ubuntu 14.04 with Docker 17.10.0-ce
@@ -174,6 +208,13 @@ workflows:
   build_deploy:
     jobs:
       - build:
+          filters:
+            tags:
+              only: /.*/
+
+      - run_container:
+          requires:
+            - build
           filters:
             tags:
               only: /.*/
