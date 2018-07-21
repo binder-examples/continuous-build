@@ -94,7 +94,9 @@ jobs:
             jupyter-repo2docker --debug --user-name username --user-id 1000 --no-run --image-name "${CONTAINER_NAME}:${DOCKER_TAG}" "${REPO_NAME}"
             # Issue command to make /home/username read/write for any user, to support Singularity
             echo "Changing permissions to chmod -R 777 /home/username"
-            docker exec "${CONTAINER_NAME}:${DOCKER_TAG}" chmod -R 777 /home/username
+            docker run --name repo2docker -td "${CONTAINER_NAME}:${DOCKER_TAG}"
+            docker exec repo2docker chmod -R 777 /home/username
+            docker commit repo2docker "${CONTAINER_NAME}:${DOCKER_TAG}"
             docker ps
             docker images
       - run:
