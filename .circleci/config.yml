@@ -6,16 +6,16 @@ jobs:
   #  1. define the CONTAINER_NAME environment variable for the project
   #     Specifically, this is the name of the Docker Hub <ORG>/<NAME> to push
   #     If not defined, will use the repository that is being built from.
-  #     to in the case that you have provided Docker credentials. 
+  #     to in the case that you have provided Docker credentials.
   #  2. Define DOCKER_USER and DOCKER_PASS (for push to Docker Hub, if wanted)
   #     If you don't define these in CircleCI settings it won't be pushed.
   #  3. Optionally define the DOCKER_TAG. If not defined, will use
   #     the commit associated with the build.
   #  4. By default, the build assumes wanting to use the local notebook here.
   #     If you want to build from a **different** Github repository, then define
-  #     the variable REPO_NAME as the name of the repository that you 
+  #     the variable REPO_NAME as the name of the repository that you
   #     want to build. That can be done in this file under build:environment,
-  #     or again online in the CircleCI environment variable settings. 
+  #     or again online in the CircleCI environment variable settings.
   setup:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
@@ -24,7 +24,7 @@ jobs:
       - image: circleci/python:3.6.1
     steps:
       - run:
-          name: Test if the user has defined the repository name 
+          name: Test if the user has defined the repository name
           command: apk add --no-cache pigz python3
 
   build:
@@ -90,8 +90,8 @@ jobs:
                 echo "Repository name found defined for build: ${REPO_NAME}"
             fi
             echo "2. Running jupyter-repo2docker..."
-            echo "jupyter-repo2docker --debug --user-name username --user-id 1000 --no-run --image-name ${CONTAINER_NAME}:${DOCKER_TAG} ${REPO_NAME}"
-            jupyter-repo2docker --debug --user-name username --user-id 1000 --no-run --image-name "${CONTAINER_NAME}:${DOCKER_TAG}" "${REPO_NAME}"
+            echo "jupyter-repo2docker --debug --user-name joyvan --user-id 1000 --no-run --image-name ${CONTAINER_NAME}:${DOCKER_TAG} ${REPO_NAME}"
+            jupyter-repo2docker --debug --user-name joyvan --user-id 1000 --no-run --image-name "${CONTAINER_NAME}:${DOCKER_TAG}" "${REPO_NAME}"
             # Issue command to make /home/username read/write for any user, to support Singularity
             echo "Changing permissions to chmod -R 777 /home/username"
             docker run --name repo2docker -td "${CONTAINER_NAME}:${DOCKER_TAG}"
