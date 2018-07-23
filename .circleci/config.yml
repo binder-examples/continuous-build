@@ -174,23 +174,15 @@ workflows:
   build_deploy:
     jobs:
       - build:
-          filters:
-            tags:
-              only: /.*/
 
       - update_cache:
           requires:
             - build
-          filters:
-            branches:
-              ignore: /docs?\/.*/
-            tags:
-              only: /.*/
 
       # This is where we upload the container to some final resting spot :)
       - deploy:
           requires:
             - build
           filters:
-            tags:
-              only: /.*/
+            branches:
+              only: master
