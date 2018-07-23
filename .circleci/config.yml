@@ -174,8 +174,14 @@ workflows:
   build_deploy:
     jobs:
       - build:
+          filters:
+            tags:
+              only: /.*/
 
       - update_cache:
+          filters:
+            tags:
+              only: /.*/
           requires:
             - build
 
