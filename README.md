@@ -4,10 +4,18 @@ This is the continuous build repository, with example configurations (and a basi
 one set up to run on CircleCI) to show how you can use repo2docker to build
 a container that serves your notebook for others to use.
 
+ - [.circleci/config.yml](.circleci/config.yml) is a basic (default) configuration to build and deploy
+ - [.circleci/config.singularity.yml](.circleci/config.singularity.yml) is a slightly modified configuration that affords easy export to Singularity containers (allowing write to the notebooks on a shared resource).
+
+For details about the environment variables you can control for each of these templates, see the README.md in 
+the [.circleci](.circleci) folder.
+
 ## Documentation
 
 You will generally want to copy the `.circleci` folder and its contents to your own folder
-with some corresponding notebook and requirements file. For complete documentation, please see 
+with some corresponding notebook and requirements file, and ensure that the template
+you desire to use in the [.circleci](.circleci) folder is named `config.yml`. 
+For complete documentation, please see 
 [repo2docker](https://repo2docker.readthedocs.io/en/latest/deploy.html) 
 on ReadTheDocs.
 

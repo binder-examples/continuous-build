@@ -16,6 +16,11 @@ jobs:
   #     the variable REPO_NAME as the name of the repository that you
   #     want to build. That can be done in this file under build:environment,
   #     or again online in the CircleCI environment variable settings.
+  #  5. Optionally, define the NOTEBOOK_PERMISSION environment variable to set
+  #     a different permission on the notebook folder (default is 777)
+  #  6. Optionally, set the NOTEBOOK_USERNAME to be where you want the
+  #     repo2docker notebooks and virtual environment to be installed
+  #     (default is joyvan)
   setup:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
@@ -89,9 +94,24 @@ jobs:
             else
                 echo "Repository name found defined for build: ${REPO_NAME}"
             fi
+            # If not set, define NOTEBOOK_PERMISSION
+            if [ ! -n "${NOTEBOOK_PERMISSION:-}" ]
+                then
+                    NOTEBOOK_PERMISSION=777;
+            fi
+            # If not set, define NOTEBOOK_USERNAME
+            if [ ! -n "${NOTEBOOK_USERNAME:-}" ]
+                then
+                    NOTEBOOK_USERNAME=joyvan;
+            fi
             echo "2. Running jupyter-repo2docker..."
-            echo "jupyter-repo2docker --debug --user-name jovyan --user-id 1000 --no-run --image-name ${CONTAINER_NAME}:${DOCKER_TAG} ${REPO_NAME}"
-            jupyter-repo2docker --debug --user-name jovyan --user-id 1000 --no-run --image-name "${CONTAINER_NAME}:${DOCKER_TAG}" "${REPO_NAME}"
+            echo "jupyter-repo2docker --debug --user-name ${NOTEBOOK_USERNAME} --user-id 1000 --no-run --image-name ${CONTAINER_NAME}:${DOCKER_TAG} ${REPO_NAME}"
+            jupyter-repo2docker --debug --user-name ${NOTEBOOK_USERNAME} --user-id 1000 --no-run --image-name "${CONTAINER_NAME}:${DOCKER_TAG}" "${REPO_NAME}"
+            # Issue command to make /home/${NOTEBOOK_USERNAME} read/write for any user, to support Singularity
+            echo "Changing permissions to chmod -R ${NOTEBOOK_PERMISSION} /home/${NOTEBOOK_USERNAME}"
+            docker run --name repo2docker -td "${CONTAINER_NAME}:${DOCKER_TAG}"
+            docker exec repo2docker chmod -R ${NOTEBOOK_PERMISSION} "/home/${NOTEBOOK_USERNAME}"
+            docker commit repo2docker "${CONTAINER_NAME}:${DOCKER_TAG}"
             docker ps
             docker images
       - run:
@@ -164,7 +184,6 @@ jobs:
                 then
                     CONTAINER_NAME="${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
             fi
-            echo "Container name set to ${CONTAINER_NAME}:${DOCKER_TAG}"
             echo "Container name set to ${CONTAINER_NAME}:${DOCKER_TAG}"
             if [[ -n "$DOCKER_PASS" ]]; then
                   docker login -u $DOCKER_USER -p $DOCKER_PASS
