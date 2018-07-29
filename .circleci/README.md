@@ -44,11 +44,12 @@ This is a base, or default configuration to build.
 |`DOCKER_TAG`|A custom tag for the deployed image.|no|the first 10 characters of the commit.|
 
 
-## config.singularity
+## config.singularity.yml
 
 This configuration is equivalent to the default config.yml, with the additional change in permissions of the
 repo2docker folder to allow for the user to write given export into a Singularity container. If you want your
-container notebooks to be usable on a shared resource, you should choose this configuration. Note that the
+container notebooks to be usable on a shared HPC resource (e.g., a supercomputer cluster
+with many users), you should choose this configuration. Note that the
 save happens in a temporary location provided by the container, and so you would want to save your notebooks as an export to your local machine, or to another location on your shared resource.
 
 **Variables that must be set in CircleCI Project Settings**
