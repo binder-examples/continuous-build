@@ -17,8 +17,9 @@ to be defined as `/usr/share/zoneinfo/America/Los_Angeles` available during the
       - TIMEZONE: "/usr/share/zoneinfo/America/Los_Angeles"
 ```
 
-or you can define variables in the [CircleCI project settings](https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-project). 
-The latter is recommended for sensitive information. 
+Note that timezone isn't necessary for any build step, but provided here as an example.
+Yr you can define environment variables in the 
+[CircleCI project settings](https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-project). The latter is recommended for sensitive information. 
 
 For all configuration descriptions below, **all variables** from both tables 
 can be set in just the CircleCI project settings, if desired.
@@ -63,8 +64,8 @@ save happens in a temporary location provided by the container, and so you would
 
 |Variable|Description|Required|Default|
 |---|---|---|---|
-|`CONTAINER_NAME`|The name of the Docker Hub container to deploy|no|`<ORG>/<REPO>`|
+|`IMAGE_NAME`|The name of the Docker Hub container to deploy|no|`<ORG>/<REPO>`|
 |`DOCKER_TAG`|A custom tag for the deployed image.|no|the first 10 characters of the commit.|
-|`NOTEBOOK_PERMISSION`|The permission to (recursively) give the notebook, to allow write.|no|777|
-|`NOTEBOOK_USERNAME`|The username (to derive the home directory) to build the notebook and virtual environment. (e.g., `/home/joyvan`|no|`joyvan`|
+|`REPO2DOCKER_PERMISSION`|The permission to (recursively) give the notebook, to allow write.|no|777|
+|`REPO2DOCKER_USERNAME`|The username (to derive the home directory) to build the notebook and virtual environment. (e.g., `/home/joyvan`|no|`joyvan`|
 
