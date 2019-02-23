@@ -39,12 +39,15 @@ jobs:
           command: apk add --no-cache pigz python3
       - restore_cache:
           keys:
-            - docker-v1-{{ .Branch }}
+            - docker-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}
           paths:
             - /tmp/cache/container.tar.gz
       - restore_cache:
           key: dependency-cache-repo2docker
       - checkout
+      - run:
+          name: Git submodules
+          command: git submodule update --init --recursive
       - setup_remote_docker
       - run:
           name: Load Docker image layer cache
@@ -111,6 +114,7 @@ jobs:
             echo "Saving ${CONTAINER_NAME}:${DOCKER_TAG} to container.tar.gz"
             mkdir -p /tmp/cache
             docker save ${CONTAINER_NAME}:${DOCKER_TAG} \
+              $(docker history -q ${CONTAINER_NAME}:${DOCKER_TAG} | tr -d '<missing>') \
               | pigz -2 -p 3 > /tmp/cache/container.tar.gz
       - persist_to_workspace:
           root: /tmp
@@ -127,7 +131,7 @@ jobs:
       - attach_workspace:
           at: /tmp
       - save_cache:
-         key: docker-v1-{{ .Branch }}
+         key: docker-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}
          paths:
             - /tmp/cache/container.tar.gz
 
