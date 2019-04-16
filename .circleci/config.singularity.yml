@@ -3,7 +3,7 @@ jobs:
 
   # If you want to deploy your container to Docker Hub, you must
   # define environment variables in the CircleCI web interface for your project
-  #  1. define the CONTAINER_NAME environment variable for the project
+  #  1. define the IMAGE_NAME environment variable for the project
   #     Specifically, this is the name of the Docker Hub <ORG>/<NAME> to push
   #     If not defined, will use the repository that is being built from.
   #     to in the case that you have provided Docker credentials.
@@ -11,11 +11,16 @@ jobs:
   #     If you don't define these in CircleCI settings it won't be pushed.
   #  3. Optionally define the DOCKER_TAG. If not defined, will use
   #     the commit associated with the build.
-  #  4. By default, the build assumes wanting to use the local notebook here.
+  #  4. By default, the build assumes wanting to use the local REPO2DOCKER here.
   #     If you want to build from a **different** Github repository, then define
   #     the variable REPO_NAME as the name of the repository that you
   #     want to build. That can be done in this file under build:environment,
   #     or again online in the CircleCI environment variable settings.
+  #  5. Optionally, define the REPO2DOCKER_PERMISSION environment variable to set
+  #     a different permission on the REPO2DOCKER folder (default is 777)
+  #  6. Optionally, set the REPO2DOCKER_USERNAME to be where you want the
+  #     repo2docker REPO2DOCKERs and virtual environment to be installed
+  #     (default is joyvan)
   setup:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
@@ -39,15 +44,12 @@ jobs:
           command: apk add --no-cache pigz python3
       - restore_cache:
           keys:
-            - docker-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}
+            - docker-v1-{{ .Branch }}
           paths:
             - /tmp/cache/container.tar.gz
       - restore_cache:
           key: dependency-cache-repo2docker
       - checkout
-      - run:
-          name: Git submodules
-          command: git submodule update --init --recursive
       - setup_remote_docker
       - run:
           name: Load Docker image layer cache
@@ -76,12 +78,12 @@ jobs:
                 then
                     DOCKER_TAG=$(echo "${CIRCLE_SHA1}" | cut -c1-10)
             fi
-            # If not set, define CONTAINER_NAME
-            if [ ! -n "${CONTAINER_NAME:-}" ]
+            # If not set, define IMAGE_NAME
+            if [ ! -n "${IMAGE_NAME:-}" ]
                 then
-                    CONTAINER_NAME="${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+                    IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
             fi
-            echo "Container name is ${CONTAINER_NAME}"
+            echo "Container name is ${IMAGE_NAME}"
             # If not set, define REPO_NAME
             if [ ! -n "${REPO_NAME:-}" ]
                 then
@@ -92,13 +94,24 @@ jobs:
             else
                 echo "Repository name found defined for build: ${REPO_NAME}"
             fi
-            echo "2. Running jupyter-repo2docker..."
-            set -x
-            if docker pull "${CONTAINER_NAME}:${DOCKER_TAG}"; then
-              jupyter-repo2docker --debug --user-name jovyan --user-id 1000 --no-run --image-name "${CONTAINER_NAME}:${DOCKER_TAG}" --cache-from "${CONTAINER_NAME}:${DOCKER_TAG}" "${REPO_NAME}"
-            else
-              jupyter-repo2docker --debug --user-name jovyan --user-id 1000 --no-run --image-name "${CONTAINER_NAME}:${DOCKER_TAG}" "${REPO_NAME}"
+            # If not set, define REPO2DOCKER_PERMISSION
+            if [ ! -n "${REPO2DOCKER_PERMISSION:-}" ]
+                then
+                    REPO2DOCKER_PERMISSION=777;
             fi
+            # If not set, define REPO2DOCKER_USERNAME
+            if [ ! -n "${REPO2DOCKER_USERNAME:-}" ]
+                then
+                    REPO2DOCKER_USERNAME=joyvan;
+            fi
+            echo "2. Running jupyter-repo2docker..."
+            echo "jupyter-repo2docker --debug --user-name ${REPO2DOCKER_USERNAME} --user-id 1000 --no-run --image-name ${IMAGE_NAME}:${DOCKER_TAG} ${REPO_NAME}"
+            jupyter-repo2docker --debug --user-name ${REPO2DOCKER_USERNAME} --user-id 1000 --no-run --image-name "${IMAGE_NAME}:${DOCKER_TAG}" "${REPO_NAME}"
+            # Issue command to make /home/${REPO2DOCKER_USERNAME} read/write for any user, to support Singularity
+            echo "Changing permissions to chmod -R ${REPO2DOCKER_PERMISSION} /home/${REPO2DOCKER_USERNAME}"
+            docker run --name repo2docker -td "${IMAGE_NAME}:${DOCKER_TAG}"
+            docker exec repo2docker chmod -R ${REPO2DOCKER_PERMISSION} "/home/${REPO2DOCKER_USERNAME}"
+            docker commit repo2docker "${IMAGE_NAME}:${DOCKER_TAG}"
             docker ps
             docker images
       - run:
@@ -110,15 +123,14 @@ jobs:
                 then
                     DOCKER_TAG=$(echo "${CIRCLE_SHA1}" | cut -c1-10)
             fi
-            # If not set, define CONTAINER_NAME
-            if [ ! -n "${CONTAINER_NAME:-}" ]
+            # If not set, define IMAGE_NAME
+            if [ ! -n "${IMAGE_NAME:-}" ]
                 then
-                    CONTAINER_NAME="${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+                    IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
             fi
-            echo "Saving ${CONTAINER_NAME}:${DOCKER_TAG} to container.tar.gz"
+            echo "Saving ${IMAGE_NAME}:${DOCKER_TAG} to container.tar.gz"
             mkdir -p /tmp/cache
-            docker save ${CONTAINER_NAME}:${DOCKER_TAG} \
-              $(docker history -q ${CONTAINER_NAME}:${DOCKER_TAG} | tr -d '<missing>') \
+            docker save ${IMAGE_NAME}:${DOCKER_TAG} \
               | pigz -2 -p 3 > /tmp/cache/container.tar.gz
       - persist_to_workspace:
           root: /tmp
@@ -135,7 +147,7 @@ jobs:
       - attach_workspace:
           at: /tmp
       - save_cache:
-         key: docker-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}
+         key: docker-v1-{{ .Branch }}
          paths:
             - /tmp/cache/container.tar.gz
 
@@ -167,18 +179,18 @@ jobs:
                 then
                     DOCKER_TAG=$(echo "${CIRCLE_SHA1}" | cut -c1-10)
             fi
-            # If not set, define CONTAINER_NAME
-            if [[ ! -n "${CONTAINER_NAME:-}" ]]
+            # If not set, define IMAGE_NAME
+            if [[ ! -n "${IMAGE_NAME:-}" ]]
                 then
-                    CONTAINER_NAME="${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+                    IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
             fi
-            echo "Container name set to ${CONTAINER_NAME}:${DOCKER_TAG}"
+            echo "Container name set to ${IMAGE_NAME}:${DOCKER_TAG}"
             if [[ -n "$DOCKER_PASS" ]]; then
                   docker login -u $DOCKER_USER -p $DOCKER_PASS
-                  docker push ${CONTAINER_NAME}:${DOCKER_TAG}
+                  docker push ${IMAGE_NAME}:${DOCKER_TAG}
                   echo "Tagging latest image..."
-                  docker tag ${CONTAINER_NAME}:${DOCKER_TAG} ${CONTAINER_NAME}:latest
-                  docker push ${CONTAINER_NAME}:latest
+                  docker tag ${IMAGE_NAME}:${DOCKER_TAG} ${IMAGE_NAME}:latest
+                  docker push ${IMAGE_NAME}:latest
             fi
 workflows:
   version: 2
@@ -190,16 +202,18 @@ workflows:
               only: /.*/
 
       - update_cache:
-          filters:
-            tags:
-              only: /.*/
           requires:
             - build
+          filters:
+            branches:
+              ignore: /docs?\/.*/
+            tags:
+              only: /.*/
 
       # This is where we upload the container to some final resting spot :)
       - deploy:
           requires:
             - build
           filters:
-            branches:
-              only: master
+            tags:
+              only: /.*/
