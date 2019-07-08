@@ -126,6 +126,42 @@ jobs:
             - cache/container.tar.gz
             - src
 
+  run_container:
+    machine:
+      image: circleci/classic:201711-01
+    working_directory: /tmp/src
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load Docker image layer cache
+          no_output_timeout: 30m
+          command: |
+            echo "Working directory is ${PWD}"
+            docker info
+            set +o pipefail
+            if [ -f /tmp/cache/container.tar.gz ]; then
+              sudo apt update && sudo apt -y install pigz
+              pigz -d --stdout /tmp/cache/container.tar.gz | docker load
+              docker images
+            fi
+      - run:
+          # Insert a better command here to determine if your container will
+          # be able to successfully run or not.
+          name: Run a command in the  built container to check it runs
+          command: |
+            # If not set, use commit id as tag
+            if [ ! -n "${DOCKER_TAG:-}" ]
+                then
+                    DOCKER_TAG=$(echo "${CIRCLE_SHA1}" | cut -c1-10)
+            fi
+            # If not set, define CONTAINER_NAME
+            if [ ! -n "${CONTAINER_NAME:-}" ]
+                then
+                    CONTAINER_NAME="${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+            fi
+            docker run -it ${CONTAINER_NAME}:${DOCKER_TAG} python -c 'import pokemon'
+
   update_cache:
     machine:
       # Ubuntu 14.04 with Docker 17.10.0-ce
@@ -182,6 +218,13 @@ workflows:
   build_deploy:
     jobs:
       - build:
+          filters:
+            tags:
+              only: /.*/
+
+      - run_container:
+          requires:
+            - build
           filters:
             tags:
               only: /.*/
